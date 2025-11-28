@@ -10,6 +10,10 @@
 </head>
 
 <body>
+    <audio id="message-sound" src="/sounds/message.mp3" preload="auto"></audio>
+    <audio id="join-sound" src="/sounds/join.mp3" preload="auto"></audio>
+    <audio id="leave-sound" src="/sounds/leave.mp3" preload="auto"></audio>
+    <audio id="click-sound" src="/sounds/click.mp3" preload="auto"></audio>
 
        <!-- Landing View -->
      <div id="landing-view">
@@ -80,11 +84,12 @@
                 <div class="font-controls">
                     <span>Fonts</span>
                     <select id="font-family-select">
+                        <option value="Courier New" selected>Courier New</option>
                         <option value="Tahoma">Tahoma</option>
                         <option value="var(--font-chat-special)">Special Elite</option>
                         <option value="var(--font-chat-hand)">Patrick Hand</option>
                         <option value="Arial">Arial</option>
-                        <option value="Courier New">Courier New</option>
+                        <option value="Verdana">Verdana</option>
                     </select>
                     <select id="font-size-select">
                         <option value="1em">10</option>

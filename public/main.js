@@ -52,7 +52,7 @@
             let lastMessageSender = null;
             let replyingTo = null;
             let currentUserStyle = {
-                fontFamily: 'var(--font-ui)',
+                fontFamily: 'Courier New',
                 fontSize: '1em',
                 fontWeight: 'normal',
                 fontStyle: 'normal',
@@ -161,7 +161,7 @@
 
                     const s = msg.style || {};
                     const flairEl = msg.flair && !isConsecutive ? `<div class="message-flair">${msg.flair}</div>` : '';
-                    const textStyle = `font-family: ${s.fontFamily || 'var(--font-ui)'}; color: ${s.color || '#333'}; font-weight: ${s.fontWeight || 'normal'}; font-style: ${s.fontStyle || 'normal'}; text-decoration: ${s.textDecoration || 'none'}; font-size: ${s.fontSize || '1em'};`;
+                    const textStyle = `font-family: ${s.fontFamily || 'Courier New'}; color: ${s.color || '#333'}; font-weight: ${s.fontWeight || 'normal'}; font-style: ${s.fontStyle || 'normal'}; text-decoration: ${s.textDecoration || 'none'}; font-size: ${s.fontSize || '1em'};`;
 
                     msgRow.innerHTML = `
                         <div class="avatar" style="background-color: ${generateAvatarColor(nickname)}">${msg.avatar || '👤'}</div>
@@ -210,10 +210,19 @@
                 document.body.appendChild(toggle);
             };
 
+            // --- SOUNDS ---
+            const playSound = (soundId) => {
+                const sound = document.getElementById(soundId);
+                if (sound) {
+                    sound.play().catch(error => console.error(`Error playing sound: ${soundId}`, error));
+                }
+            };
+
             // --- EVENT HANDLERS ---
             const handleSendMessage = () => {
                 const text = messageInput.value.trim();
                 if (text && identity) {
+                    playSound('click-sound');
                     const message = {
                         text: text,
                         style: { ...currentUserStyle },
@@ -234,6 +243,7 @@
             const handleEnterChat = () => {
                 const nickname = nicknameInput.value.trim();
                 if (nickname) {
+                    playSound('click-sound');
                     const newIdentity = {
                         nickname: nickname,
                         flair: flairInput.value.trim(),
@@ -263,7 +273,10 @@
                 if (e.key === 'Enter') handleEnterChat();
             });
 
-            changeNicknameBtn.addEventListener('click', clearIdentity);
+            changeNicknameBtn.addEventListener('click', () => {
+                playSound('click-sound');
+                clearIdentity();
+            });
 
             scrollOnCheckbox.addEventListener('change', (e) => {
                 isScrollOn = e.target.checked;
@@ -281,46 +294,59 @@
             });
             
             boldBtn.addEventListener('click', () => {
+                playSound('click-sound');
                 boldBtn.classList.toggle('active');
                 currentUserStyle.fontWeight = currentUserStyle.fontWeight === 'bold' ? 'normal' : 'bold';
                 applyInputStyles();
             });
             italicBtn.addEventListener('click', () => {
+                playSound('click-sound');
                 italicBtn.classList.toggle('active');
                 currentUserStyle.fontStyle = currentUserStyle.fontStyle === 'italic' ? 'normal' : 'italic';
                 applyInputStyles();
             });
             underlineBtn.addEventListener('click', () => {
+                playSound('click-sound');
                 underlineBtn.classList.toggle('active');
                 currentUserStyle.textDecoration = currentUserStyle.textDecoration === 'underline' ? 'none' : 'underline';
                 applyInputStyles();
             });
 
-            const showModal = (id) => document.getElementById(id).style.display = 'flex';
+            const showModal = (id) => {
+                playSound('click-sound');
+                document.getElementById(id).style.display = 'flex';
+            }
             const hideModal = (id) => document.getElementById(id).style.display = 'none';
 
             openJoinModalBtn.addEventListener('click', () => showModal('join-room-modal'));
-            openEmoteModalBtn.addEventListener('click', () => showModal('emote-picker-modal'));
+            openEmoteModalBtn.addEventListener('click', () => {
+                playSound('click-sound');
+                showModal('emote-picker-modal');
+            });
             aboutBtn.addEventListener('click', () => showModal('about-modal'));
             collaborateBtn.addEventListener('click', () => showModal('collaborate-modal'));
 
             createCircleBtn.addEventListener('click', () => {
+                playSound('click-sound');
                 shareLinkInput.value = window.location.href;
                 showModal('share-circle-modal');
             });
             copyLinkBtn.addEventListener('click', () => {
+                playSound('click-sound');
                 navigator.clipboard.writeText(shareLinkInput.value).then(() => {
                     copyLinkBtn.textContent = 'Copied!';
                     setTimeout(() => { copyLinkBtn.textContent = 'Copy Link'; }, 2000);
                 });
             });
             newCircleBtn.addEventListener('click', () => {
+                playSound('click-sound');
                 const newCircle = 'circle-' + Math.random().toString(36).substr(2, 9);
                 window.location.search = `?circle=${newCircle}`;
             });
 
             closeButtons.forEach(btn => {
                 btn.addEventListener('click', (e) => {
+                    playSound('click-sound');
                     const modalId = e.currentTarget.getAttribute('data-target-modal');
                     hideModal(modalId);
                 });
@@ -344,6 +370,7 @@
                 emoteEl.className = 'emote-item';
                 emoteEl.textContent = emote;
                 emoteEl.addEventListener('click', () => {
+                    playSound('click-sound');
                     messageInput.value += emote;
                     messageInput.focus();
                     hideModal('emote-picker-modal');
@@ -353,6 +380,7 @@
 
             
             userListToggleBtn.addEventListener('click', () => {
+                playSound('click-sound');
                 contentArea.classList.toggle('user-list-closed');
                 if (contentArea.classList.contains('user-list-closed')) {
                     userListToggleBtn.textContent = '❒';
@@ -400,10 +428,16 @@
             });
 
             socket.on('message', (messageData) => {
+                playSound('message-sound');
                 appendMessage(messageData);
             });
             
             socket.on('systemMessage', (msg) => {
+                if (msg.type === 'join') {
+                    playSound('join-sound');
+                } else if (msg.type === 'leave') {
+                    playSound('leave-sound');
+                }
                 appendMessage({ system: true, text: msg.text, type: msg.type });
             });
             
