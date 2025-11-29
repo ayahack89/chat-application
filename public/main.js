@@ -111,14 +111,27 @@
                 users.forEach(user => {
                     const userEl = document.createElement('div');
                     userEl.className = 'user-item';
-                    const flairEl = user.flair ? `<div class="user-flair">${user.flair}</div>` : '';
-                    userEl.innerHTML = `
-                        <div class="avatar">${user.avatar || '👤'}</div>
-                        <div class="user-info">
-        <span>${user.nickname}</span>
-                            ${flairEl}
-                        </div>
-                    `;
+
+                    const avatarEl = document.createElement('div');
+                    avatarEl.className = 'avatar';
+                    avatarEl.textContent = user.avatar || '👤';
+
+                    const userInfoEl = document.createElement('div');
+                    userInfoEl.className = 'user-info';
+
+                    const nicknameEl = document.createElement('span');
+                    nicknameEl.textContent = user.nickname;
+                    userInfoEl.appendChild(nicknameEl);
+
+                    if (user.flair) {
+                        const flairEl = document.createElement('div');
+                        flairEl.className = 'user-flair';
+                        flairEl.textContent = user.flair;
+                        userInfoEl.appendChild(flairEl);
+                    }
+
+                    userEl.appendChild(avatarEl);
+                    userEl.appendChild(userInfoEl);
                     userList.appendChild(userEl);
                 });
                 userListHeader.textContent = `${users.length} Users >> 0 Ignored`;
@@ -149,29 +162,62 @@
                         msgRow.classList.add('consecutive');
                     }
 
-                    let replyHtml = '';
+                    const avatarEl = document.createElement('div');
+                    avatarEl.className = 'avatar';
+                    avatarEl.style.backgroundColor = generateAvatarColor(nickname);
+                    avatarEl.textContent = msg.avatar || '👤';
+
+                    const messageContentEl = document.createElement('div');
+                    messageContentEl.className = 'message-content';
+                    
                     if (msg.replyTo) {
-                        replyHtml = `
-                            <div class="reply-quote">
-                                <span class="reply-username">${msg.replyTo.username}</span>
-                                <span class="reply-text">${msg.replyTo.text}</span>
-                            </div>
-                        `;
+                        const replyQuoteEl = document.createElement('div');
+                        replyQuoteEl.className = 'reply-quote';
+
+                        const replyUsernameEl = document.createElement('span');
+                        replyUsernameEl.className = 'reply-username';
+                        replyUsernameEl.textContent = msg.replyTo.username;
+
+                        const replyTextEl = document.createElement('span');
+                        replyTextEl.className = 'reply-text';
+                        replyTextEl.textContent = msg.replyTo.text;
+
+                        replyQuoteEl.appendChild(replyUsernameEl);
+                        replyQuoteEl.appendChild(replyTextEl);
+                        messageContentEl.appendChild(replyQuoteEl);
                     }
 
-                    const s = msg.style || {};
-                    const flairEl = msg.flair && !isConsecutive ? `<div class="message-flair">${msg.flair}</div>` : '';
-                    const textStyle = `font-family: ${s.fontFamily || 'Courier New'}; color: ${s.color || '#333'}; font-weight: ${s.fontWeight || 'normal'}; font-style: ${s.fontStyle || 'normal'}; text-decoration: ${s.textDecoration || 'none'}; font-size: ${s.fontSize || '1em'};`;
+                    const usernameEl = document.createElement('span');
+                    usernameEl.className = 'message-username';
+                    usernameEl.style.color = (msg.style && msg.style.color) || '#333';
+                    usernameEl.dataset.username = nickname;
+                    usernameEl.textContent = nickname;
+                    
+                    messageContentEl.appendChild(usernameEl);
 
-                    msgRow.innerHTML = `
-                        <div class="avatar" style="background-color: ${generateAvatarColor(nickname)}">${msg.avatar || '👤'}</div>
-                        <div class="message-content">
-                            ${replyHtml}
-                            <span class="message-username" style="color: ${s.color || '#333'}" data-username="${nickname}">${nickname}</span>
-                            ${flairEl}
-                            <span class="message-text" style="${textStyle}">${msg.text}</span>
-                        </div>
-                    `;
+                    if (msg.flair && !isConsecutive) {
+                        const flairEl = document.createElement('div');
+                        flairEl.className = 'message-flair';
+                        flairEl.textContent = msg.flair;
+                        messageContentEl.appendChild(flairEl);
+                    }
+
+                    const textEl = document.createElement('span');
+                    textEl.className = 'message-text';
+                    const s = msg.style || {};
+                    textEl.style.fontFamily = s.fontFamily || 'Courier New';
+                    textEl.style.color = s.color || '#333';
+                    textEl.style.fontWeight = s.fontWeight || 'normal';
+                    textEl.style.fontStyle = s.fontStyle || 'normal';
+                    textEl.style.textDecoration = s.textDecoration || 'none';
+                    textEl.style.fontSize = s.fontSize || '1em';
+                    textEl.textContent = msg.text;
+                    
+                    messageContentEl.appendChild(textEl);
+                    
+                    msgRow.appendChild(avatarEl);
+                    msgRow.appendChild(messageContentEl);
+                    
                     messageContainer.appendChild(msgRow);
                     lastMessageSender = nickname;
                 }

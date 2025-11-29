@@ -2,10 +2,22 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const xss = require('xss');
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
+
+// Security middleware
+app.use(helmet());
+
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100 // limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
 
 const PORT = process.env.PORT || 3000;
 const MAX_MESSAGES_PER_CIRCLE = 50;
@@ -25,7 +37,16 @@ io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`);
 
     socket.on('newUser', (data) => {
-        const { nickname, flair, clientToken, circle: circleId } = data;
+        const { nickname: rawNickname, flair: rawFlair, clientToken, circle: circleId } = data;
+
+        // Sanitize and validate inputs
+        const nickname = xss(rawNickname).slice(0, 30);
+        const flair = xss(rawFlair).slice(0, 50);
+
+        if (!nickname) {
+            socket.emit('nicknameError', { message: 'Nickname cannot be empty.' });
+            return;
+        }
         
         // Ensure circle exists
         if (!circles[circleId]) {
@@ -78,13 +99,19 @@ io.on('connection', (socket) => {
                 repliedToMessage = circle.messages.byId.get(messageData.replyTo);
             }
 
+            // Sanitize and validate message text
+            const sanitizedText = xss(messageData.text).slice(0, 500);
+            if (!sanitizedText) {
+                return; // Ignore empty messages
+            }
+
             const fullMessage = {
                 id: Date.now() + '-' + Math.random(),
                 username: user.nickname,
                 flair: user.flair,
                 avatar: user.avatar,
-                text: messageData.text,
-                style: messageData.style,
+                text: sanitizedText,
+                style: messageData.style, // Assuming style is an object with simple, safe properties
                 timestamp: new Date(),
                 replyTo: repliedToMessage ? {
                     username: repliedToMessage.username,
