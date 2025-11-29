@@ -10,6 +10,14 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
+// Initialize the profanity filter
+const Filter = require('bad-words'); 
+const filter = new Filter(); 
+
+// Optional: specific words you want to whitelist or blacklist
+// filter.addWords('somebadword'); 
+// filter.removeWords('hell');
+
 // Security middleware
 app.use(helmet());
 
@@ -22,7 +30,7 @@ app.use(limiter);
 const PORT = process.env.PORT || 3000;
 const MAX_MESSAGES_PER_CIRCLE = 50;
 
-// Serve static files from the 'public' directory (absolute path for Render)
+// Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Add a catch-all route to serve index.html
@@ -39,14 +47,21 @@ io.on('connection', (socket) => {
     socket.on('newUser', (data) => {
         const { nickname: rawNickname, flair: rawFlair, clientToken, circle: circleId } = data;
 
-        // Sanitize and validate inputs
-        const nickname = xss(rawNickname).slice(0, 30);
+        // Sanitize inputs (XSS)
+        let nickname = xss(rawNickname).slice(0, 30);
         const flair = xss(rawFlair).slice(0, 50);
 
         if (!nickname) {
             socket.emit('nicknameError', { message: 'Nickname cannot be empty.' });
             return;
         }
+
+        // --- PROFANITY CHECK 1: NICKNAMES ---
+        // If nickname contains bad words, clean it automatically
+        if (filter.isProfane(nickname)) {
+            nickname = filter.clean(nickname);
+        }
+        // ------------------------------------
         
         // Ensure circle exists
         if (!circles[circleId]) {
@@ -101,21 +116,27 @@ io.on('connection', (socket) => {
 
             // Sanitize and validate message text
             const sanitizedText = xss(messageData.text).slice(0, 500);
+
             if (!sanitizedText) {
                 return; // Ignore empty messages
             }
+
+            // --- PROFANITY CHECK 2: CHAT MESSAGES ---
+            // Clean the message before storing or sending
+            const cleanText = filter.clean(sanitizedText);
+            // ----------------------------------------
 
             const fullMessage = {
                 id: Date.now() + '-' + Math.random(),
                 username: user.nickname,
                 flair: user.flair,
                 avatar: user.avatar,
-                text: sanitizedText,
-                style: messageData.style, // Assuming style is an object with simple, safe properties
+                text: cleanText, // <--- Use cleanText instead of sanitizedText
+                style: messageData.style, 
                 timestamp: new Date(),
                 replyTo: repliedToMessage ? {
                     username: repliedToMessage.username,
-                    text: repliedToMessage.text
+                    text: repliedToMessage.text 
                 } : null
             };
             
